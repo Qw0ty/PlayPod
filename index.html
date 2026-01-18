@@ -1,155 +1,152 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>음악 추천 제보</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>음악 추천 제보</title>
 
-  <!-- 폭죽 라이브러리 -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-  <style>
-    body{
-      font-family:system-ui,-apple-system,Arial,sans-serif;
-      margin:24px;
-      background:linear-gradient(135deg,#0f0f1a,#1a1a2e);
-    }
-    .card{
-      max-width:760px;
-      background:white;
-      border-radius:18px;
-      padding:20px;
-      box-shadow:0 20px 40px rgba(0,0,0,.3);
-      animation:floatIn .8s ease-out;
-    }
-    @keyframes floatIn{
-      from{opacity:0;transform:translateY(30px) scale(.95);}
-      to{opacity:1;transform:translateY(0) scale(1);}
-    }
-    label{display:block;margin-top:12px;font-weight:800}
-    input,textarea{
-      width:100%;box-sizing:border-box;padding:10px;
-      border:1px solid #d6d6d6;border-radius:10px;margin-top:6px;
-      transition:.2s;
-    }
-    input:focus,textarea:focus{
-      outline:none;border-color:#6a5cff;
-      box-shadow:0 0 0 3px rgba(106,92,255,.25);
-      transform:translateY(-1px);
-    }
-    button{
-      margin-top:14px;padding:12px 16px;border:0;border-radius:12px;
-      font-weight:900;cursor:pointer;
-      background:linear-gradient(135deg,#6a5cff,#8f7bff);
-      color:white;
-      box-shadow:0 8px 18px rgba(0,0,0,.25);
-      transition:.2s;
-    }
-    button:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,0,0,.35);}
-    button:active{transform:translateY(1px);}
-    .row{display:flex;gap:12px}
-    .row>div{flex:1}
-    .preview{
-      margin-top:14px;padding:12px;border-radius:12px;
-      background:#fafafa;border:1px dashed #ddd;
-      display:none;animation:fadeIn .4s ease;
-    }
-    @keyframes fadeIn{
-      from{opacity:0;transform:scale(.95);}
-      to{opacity:1;transform:scale(1);}
-    }
-    .preview img{max-width:220px;border-radius:10px;margin-top:8px}
-    .status{margin-top:12px;font-weight:900}
-    .muted{color:#666;font-weight:600}
-  </style>
+<style>
+body{
+  font-family:system-ui;
+  background:linear-gradient(135deg,#0f0f1a,#1a1a2e);
+  margin:0;padding:24px;
+}
+.card{
+  max-width:760px;margin:auto;
+  background:white;border-radius:18px;padding:20px;
+  box-shadow:0 20px 40px rgba(0,0,0,.3);
+  animation:floatIn .7s ease;
+}
+@keyframes floatIn{
+  from{opacity:0;transform:translateY(40px) scale(.95)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+label{font-weight:800;margin-top:12px;display:block}
+input,textarea{
+  width:100%;padding:10px;border-radius:10px;
+  border:1px solid #ccc;margin-top:6px;
+}
+input:focus,textarea:focus{
+  outline:none;border-color:#6a5cff;
+  box-shadow:0 0 0 3px rgba(106,92,255,.25);
+}
+button{
+  margin-top:14px;padding:12px 16px;
+  border-radius:12px;border:none;
+  background:linear-gradient(135deg,#6a5cff,#8f7bff);
+  color:white;font-weight:900;cursor:pointer;
+  box-shadow:0 6px 14px rgba(0,0,0,.3);
+  transition:.2s;
+}
+button:hover{transform:translateY(-2px)}
+.row{display:flex;gap:12px}
+.row>div{flex:1}
+.preview{
+  margin-top:14px;padding:12px;border-radius:12px;
+  background:#fafafa;border:1px dashed #ddd;
+  display:none;
+}
+.preview img{max-width:220px;border-radius:10px;margin-top:8px}
+.status{margin-top:10px;font-weight:900}
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>🎧 음악 추천 제보</h1>
-    <p class="muted">닉네임 + 링크 + 구간을 입력하면 운영자 메일로 전송돼요.</p>
+<div class="card">
+<h1>🎧 음악 추천 제보</h1>
 
-    <form id="form" method="POST" action="https://formspree.io/f/mlggjprl">
-      <label>닉네임</label>
-      <input name="nickname" placeholder="예: PlayPod_K" required>
+<form id="form" action="https://formspree.io/f/mlggjprl" method="POST">
 
-      <label>음악 링크</label>
-      <input id="url" name="music_url" placeholder="YouTube / Spotify / SoundCloud 링크" required>
+<label>닉네임</label>
+<input name="nickname" placeholder="예: PlayPod_K" required>
 
-      <div class="row">
-        <div>
-          <label>시작 시간</label>
-          <input name="start_time" placeholder="예: 1:12" required>
-        </div>
-        <div>
-          <label>끝 시간</label>
-          <input name="end_time" placeholder="예: 1:45" required>
-        </div>
-      </div>
+<label>음악 링크</label>
+<input id="url" name="music_url" placeholder="YouTube / Spotify / SoundCloud" required>
 
-      <label>메모</label>
-      <textarea name="note" rows="3" placeholder="원하는 분위기/포인트"></textarea>
+<div class="row">
+<div>
+<label>시작 시간</label>
+<input name="start_time" placeholder="1:12" required>
+</div>
+<div>
+<label>끝 시간</label>
+<input name="end_time" placeholder="1:45" required>
+</div>
+</div>
 
-      <button type="button" id="btnPreview">미리보기</button>
-      <button type="submit">전송하기</button>
+<label>메모</label>
+<textarea name="note"></textarea>
 
-      <div id="preview" class="preview"></div>
-      <div id="status" class="status"></div>
+<button type="button" id="previewBtn">미리보기</button>
+<button type="submit">전송하기</button>
 
-      <input type="hidden" name="meta_title" id="meta_title">
-      <input type="hidden" name="meta_provider" id="meta_provider">
-      <input type="hidden" name="meta_author" id="meta_author">
-      <input type="hidden" name="meta_thumbnail" id="meta_thumbnail">
-    </form>
-  </div>
+<div id="preview" class="preview"></div>
+<div id="status" class="status"></div>
 
-  <script>
-    const $ = id => document.getElementById(id);
+<input type="hidden" id="meta_title" name="meta_title">
+<input type="hidden" id="meta_author" name="meta_author">
+<input type="hidden" id="meta_provider" name="meta_provider">
+<input type="hidden" id="meta_thumbnail" name="meta_thumbnail">
 
-    function setStatus(msg, ok=true){
-      $("status").textContent = msg;
-      $("status").style.color = ok ? "#6a5cff" : "crimson";
-    }
+</form>
+</div>
 
-    async function doPreview(){
-      const url = $("url").value.trim();
-      if(!url) return;
+<script>
+const $ = id => document.getElementById(id);
 
-      setStatus("미리보기 불러오는 중…");
-      try{
-        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-        const data = await res.json();
+function detect(url){
+  if(url.includes("youtu")) return "youtube";
+  if(url.includes("spotify")) return "spotify";
+  if(url.includes("soundcloud")) return "soundcloud";
+  return null;
+}
 
-        $("preview").style.display = "block";
-        $("preview").innerHTML = `
-          <b>${data.title}</b>
-          <div class="muted">${data.author_name}</div>
-          <img src="${data.thumbnail_url}">
-        `;
+function oembed(type,url){
+  const u=encodeURIComponent(url);
+  if(type=="youtube") return `https://www.youtube.com/oembed?url=${u}&format=json`;
+  if(type=="spotify") return `https://open.spotify.com/oembed?url=${u}`;
+  if(type=="soundcloud") return `https://soundcloud.com/oembed?format=json&url=${u}`;
+}
 
-        $("meta_title").value = data.title;
-        $("meta_author").value = data.author_name;
-        $("meta_provider").value = data.provider_name;
-        $("meta_thumbnail").value = data.thumbnail_url;
+async function preview(){
+  const url=$("url").value.trim();
+  if(!url) return;
 
-        setStatus("미리보기 완료!");
-      }catch{
-        setStatus("미리보기 실패 (그래도 전송은 가능)", false);
-      }
-    }
+  const type=detect(url);
+  if(!type){$("status").innerText="지원 안되는 링크";return;}
 
-    $("btnPreview").addEventListener("click", doPreview);
+  try{
+    const res=await fetch(oembed(type,url));
+    const data=await res.json();
 
-    // 전송 성공 시 폭죽
-    $("form").addEventListener("submit", () => {
-      setTimeout(() => {
-        confetti({
-          particleCount: 200,
-          spread: 100,
-          origin: { y: 0.6 }
-        });
-        setStatus("전송 완료! 🎉 추천 고마워요!");
-      }, 300);
-    });
-  </script>
+    $("preview").style.display="block";
+    $("preview").innerHTML=`
+      <b>${data.title}</b><br>
+      ${data.author_name || ""}<br>
+      <img src="${data.thumbnail_url || ""}">
+    `;
+
+    $("meta_title").value=data.title;
+    $("meta_author").value=data.author_name;
+    $("meta_provider").value=data.provider_name;
+    $("meta_thumbnail").value=data.thumbnail_url;
+
+    $("status").innerText="미리보기 완료!";
+  }catch{
+    $("status").innerText="미리보기 불러오기 실패 (그래도 전송 가능)";
+  }
+}
+
+$("previewBtn").addEventListener("click",preview);
+
+$("form").addEventListener("submit",()=>{
+  setTimeout(()=>{
+    confetti({particleCount:200,spread:100,origin:{y:0.6}});
+    $("status").innerText="전송 완료! 🎉 추천 감사합니다!";
+  },300);
+});
+</script>
 </body>
 </html>
