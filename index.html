@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>음악 추천 제보</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Arial,sans-serif;margin:24px;line-height:1.45}
+    .card{max-width:760px;border:1px solid #e5e5e5;border-radius:12px;padding:16px}
+    label{display:block;margin-top:12px;font-weight:800}
+    input,textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d6d6d6;border-radius:10px;margin-top:6px}
+    button{margin-top:14px;padding:10px 14px;border:0;border-radius:10px;font-weight:900;cursor:pointer}
+    .row{display:flex;gap:12px}
+    .row>div{flex:1}
+    .preview{margin-top:14px;padding:12px;border-radius:12px;background:#fafafa;border:1px dashed #ddd;display:none}
+    .preview img{max-width:220px;border-radius:10px;margin-top:8px}
+    .status{margin-top:12px;font-weight:900}
+    .muted{color:#666;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 style="margin:0 0 8px 0;">🎧 음악 추천 제보</h1>
+    <p class="muted" style="margin:0 0 12px 0;">링크 + 구간을 입력하면 운영자 메일로 전송돼요.</p>
+
+    <!-- ✅ 여기 action만 Formspree endpoint로 바꾸세요 -->
+    <form id="form" method="POST" action="https://formspree.io/f/mlggjprl">
+      <label>음악 링크</label>
+      <input id="url" name="music_url" placeholder="YouTube / Spotify / SoundCloud 링크" required />
+
+      <div class="row">
+        <div>
+          <label>시작 시간</label>
+          <input id="start" name="start_time" placeholder="예: 1:12 또는 00:01:12" required />
+        </div>
+        <div>
+          <label>끝 시간</label>
+          <input id="end" name="end_time" placeholder="예: 1:45 또는 00:01:45" required />
+        </div>
+      </div>
+
+      <label>메모(선택)</label>
+      <textarea id="note" name="note" rows="3" placeholder="원하는 분위기/참고사항"></textarea>
+
+      <button type="button" id="btnPreview">미리보기</button>
+      <button type="submit">전송하기</button>
+
+      <div id="preview" class="preview"></div>
+      <div id="status" class="status"></div>
+
+      <!-- ✅ 미리보기 메타를 같이 메일로 보내기 위한 hidden 필드 -->
+      <input type="hidden" name="meta_provider" id="meta_provider">
+      <input type="hidden" name="meta_title" id="meta_title">
+      <input type="hidden" name="meta_author" id="meta_author">
+      <input type="hidden" name="meta_thumbnail" id="meta_thumbnail">
+    </form>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(msg, ok=true){
+      $("status").textContent = msg || "";
+      $("status").style.color = ok ? "inherit" : "crimson";
+    }
+
+    function detectProvider(url){
+      try{
+        const u = new URL(url);
+        const h = u.hostname.toLowerCase();
+        if (h.includes("youtube.com") || h.includes("youtu.be")) return "youtube";
+        if (h.includes("open.spotify.com") || h.includes("spotify.link")) return "spotify";
+        if (h.includes("soundcloud.com")) return "soundcloud";
+        return "unknown";
+      }catch(e){
+        return "invalid";
+      }
+    }
+
+    function oembedEndpoint(provider, url){
+      const encoded = encodeURIComponent(url);
+      if (provider === "youtube") return `https://www.youtube.com/oembed?url=${encoded}&format=json`;
+      if (provider === "spotify") return `https://open.spotify.com/oembed?url=${encoded}`;
+      if (provider === "soundcloud") return `https://soundcloud.com/oembed?format=json&url=${encoded}`;
+      return null;
+    }
+
+    function renderPreview({ok, title, author_name, provider_name, thumbnail_url, error}){
+      const box = $("preview");
+      box.style.display = "block";
+
+      if(!ok){
+        box.innerHTML = `미리보기를 불러오지 못했어요 😿<div class="muted">${error || ""}</div>`;
+        // 미리보기 실패해도 전송은 가능
+        $("meta_provider").value = "";
+        $("meta_title").value = "";
+        $("meta_author").value = "";
+        $("meta_thumbnail").value = "";
+        return;
+      }
+
+      box.innerHTML = `
+        <div><b>${title || "(제목 없음)"}</b></div>
+        <div class="muted">${provider_name || ""}${author_name ? " · " + author_name : ""}</div>
+        ${thumbnail_url ? `<img src="${thumbnail_url}" alt="thumbnail">` : ""}
+      `;
+
+      // hidden 필드에 담아 메일로 같이 전송
+      $("meta_provider").value = provider_name || "";
+      $("meta_title").value = title || "";
+      $("meta_author").value = author_name || "";
+      $("meta_thumbnail").value = thumbnail_url || "";
+    }
+
+    async function doPreview(){
+      const url = $("url").value.trim();
+      if(!url){ setStatus("링크를 먼저 입력해 주세요!", false); return; }
+
+      const provider = detectProvider(url);
+      if(provider === "invalid"){ setStatus("URL 형식이 이상해요 😿", false); return; }
+      if(provider === "unknown"){
+        renderPreview({ok:false, error:"지원하지 않는 링크예요. (YouTube/Spotify/SoundCloud 권장)"});
+        setStatus("미리보기 실패(지원 링크 아님) 😿", false);
+        return;
+      }
+
+      const endpoint = oembedEndpoint(provider, url);
+      setStatus("미리보기 불러오는 중…");
+
+      try{
+        const res = await fetch(endpoint);
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        renderPreview({
+          ok:true,
+          title: data.title,
+          author_name: data.author_name,
+          provider_name: data.provider_name,
+          thumbnail_url: data.thumbnail_url
+        });
+
+        setStatus("미리보기 완료! ✅");
+      }catch(e){
+        renderPreview({ok:false, error:"oEmbed 호출이 막혔거나 실패했어요(환경에 따라 CORS 문제 가능). 그래도 전송은 돼요!"});
+        setStatus("미리보기 실패 😿", false);
+      }
+    }
+
+    $("btnPreview").addEventListener("click", doPreview);
+    $("url").addEventListener("change", () => { if($("url").value.trim()) doPreview(); });
+  </script>
+</body>
+</html>
