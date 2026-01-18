@@ -5,148 +5,362 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>음악 추천 제보</title>
 
+<!-- 폭죽 -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-body{
-  font-family:system-ui;
-  background:linear-gradient(135deg,#0f0f1a,#1a1a2e);
-  margin:0;padding:24px;
-}
-.card{
-  max-width:760px;margin:auto;
-  background:white;border-radius:18px;padding:20px;
-  box-shadow:0 20px 40px rgba(0,0,0,.3);
-  animation:floatIn .7s ease;
-}
-@keyframes floatIn{
-  from{opacity:0;transform:translateY(40px) scale(.95)}
-  to{opacity:1;transform:translateY(0) scale(1)}
-}
-label{font-weight:800;margin-top:12px;display:block}
-input,textarea{
-  width:100%;padding:10px;border-radius:10px;
-  border:1px solid #ccc;margin-top:6px;
-}
-input:focus,textarea:focus{
-  outline:none;border-color:#6a5cff;
-  box-shadow:0 0 0 3px rgba(106,92,255,.25);
-}
-button{
-  margin-top:14px;padding:12px 16px;
-  border-radius:12px;border:none;
-  background:linear-gradient(135deg,#6a5cff,#8f7bff);
-  color:white;font-weight:900;cursor:pointer;
-  box-shadow:0 6px 14px rgba(0,0,0,.3);
-  transition:.2s;
-}
-button:hover{transform:translateY(-2px)}
-.row{display:flex;gap:12px}
-.row>div{flex:1}
-.preview{
-  margin-top:14px;padding:12px;border-radius:12px;
-  background:#fafafa;border:1px dashed #ddd;
-  display:none;
-}
-.preview img{max-width:220px;border-radius:10px;margin-top:8px}
-.status{margin-top:10px;font-weight:900}
+  :root{
+    --accent:#6a5cff;
+    --accent2:#8f7bff;
+    --card:rgba(255,255,255,.92);
+    --shadow:0 18px 40px rgba(0,0,0,.35);
+  }
+
+  /* 배경 레이어 (크로스페이드용) */
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Arial,sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .bg{
+    position:fixed; inset:0;
+    background-size:cover;
+    background-position:center;
+    filter:saturate(1.05) contrast(1.05);
+    transform:scale(1.05);
+    transition:opacity 900ms ease;
+    opacity:0;
+    z-index:-3;
+  }
+  .bg.on{opacity:1;}
+  .overlay{
+    position:fixed; inset:0;
+    background:radial-gradient(1200px 600px at 20% 10%, rgba(106,92,255,.25), transparent 60%),
+               linear-gradient(135deg, rgba(0,0,0,.55), rgba(0,0,0,.35));
+    z-index:-2;
+  }
+  .grain{
+    position:fixed; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;
+    opacity:.25;
+    z-index:-1;
+    pointer-events:none;
+  }
+
+  .wrap{padding:22px;}
+  .card{
+    max-width:720px;
+    margin:0 auto;
+    background:var(--card);
+    border-radius:16px;
+    padding:16px 16px 14px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(10px);
+    animation:floatIn .6s ease;
+  }
+  @keyframes floatIn{
+    from{opacity:0;transform:translateY(18px) scale(.98)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+
+  h1{margin:0 0 6px 0; font-size:22px;}
+  .muted{color:rgba(0,0,0,.6); font-weight:600; margin:0 0 10px 0; font-size:13px;}
+
+  label{display:block; margin-top:10px; font-weight:850; font-size:13px;}
+  input,textarea{
+    width:100%;
+    box-sizing:border-box;
+    margin-top:6px;
+    padding:9px 10px;           /* ✅ 크기 줄임 */
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,.16);
+    font-size:14px;
+    background:rgba(255,255,255,.9);
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+  }
+  textarea{min-height:72px; resize:vertical;}
+
+  input:focus, textarea:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(106,92,255,.20);
+    transform:translateY(-1px);
+  }
+
+  .row{display:flex; gap:10px;}
+  .row>div{flex:1}
+
+  .btns{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  button{
+    padding:10px 14px;          /* ✅ 크기 줄임 */
+    border-radius:12px;
+    border:0;
+    font-weight:900;
+    cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;
+    box-shadow:0 8px 18px rgba(0,0,0,.25);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  }
+  button:hover{transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.30);}
+  button:active{transform:translateY(1px); filter:saturate(1.1);}
+
+  .preview{
+    margin-top:12px;
+    padding:12px;
+    border-radius:12px;
+    background:rgba(255,255,255,.85);
+    border:1px dashed rgba(0,0,0,.18);
+    display:none;
+    animation:fadeIn .35s ease;
+  }
+  @keyframes fadeIn{
+    from{opacity:0;transform:scale(.985)}
+    to{opacity:1;transform:scale(1)}
+  }
+  .preview img{
+    max-width:210px;
+    border-radius:10px;
+    margin-top:8px;
+    display:block;
+  }
+  .status{
+    margin-top:10px;
+    font-weight:900;
+    font-size:13px;
+  }
+
+  /* 모바일에서 줄바꿈 */
+  @media (max-width:560px){
+    .row{flex-direction:column;}
+  }
 </style>
 </head>
 
 <body>
-<div class="card">
-<h1>🎧 음악 추천 제보</h1>
+  <!-- 배경 2장으로 크로스페이드 -->
+  <div id="bgA" class="bg on"></div>
+  <div id="bgB" class="bg"></div>
+  <div class="overlay"></div>
+  <div class="grain"></div>
 
-<form id="form" action="https://formspree.io/f/mlggjprl" method="POST">
+  <div class="wrap">
+    <div class="card">
+      <h1>🎧 음악 추천 제보</h1>
+      <p class="muted">닉네임 + 링크 + 구간을 입력하면 운영자 메일로 전송돼요. (링크 입력하면 자동 미리보기!)</p>
 
-<label>닉네임</label>
-<input name="nickname" placeholder="예: PlayPod_K" required>
+      <form id="form" action="https://formspree.io/f/mlggjprl" method="POST">
+        <label>닉네임</label>
+        <input name="nickname" placeholder="예: PlayPod_K" required>
 
-<label>음악 링크</label>
-<input id="url" name="music_url" placeholder="YouTube / Spotify / SoundCloud" required>
+        <label>음악 링크</label>
+        <input id="url" name="music_url" placeholder="YouTube / Spotify / SoundCloud 링크" required>
 
-<div class="row">
-<div>
-<label>시작 시간</label>
-<input name="start_time" placeholder="1:12" required>
-</div>
-<div>
-<label>끝 시간</label>
-<input name="end_time" placeholder="1:45" required>
-</div>
-</div>
+        <div class="row">
+          <div>
+            <label>시작 시간</label>
+            <input name="start_time" placeholder="예: 1:12 또는 00:01:12" required>
+          </div>
+          <div>
+            <label>끝 시간</label>
+            <input name="end_time" placeholder="예: 1:45 또는 00:01:45" required>
+          </div>
+        </div>
 
-<label>메모</label>
-<textarea name="note"></textarea>
+        <label>메모</label>
+        <textarea name="note" placeholder="원하는 분위기/포인트(선택)"></textarea>
 
-<button type="button" id="previewBtn">미리보기</button>
-<button type="submit">전송하기</button>
+        <div class="btns">
+          <button type="button" id="previewBtn">미리보기(수동)</button>
+          <button type="submit">전송하기</button>
+        </div>
 
-<div id="preview" class="preview"></div>
-<div id="status" class="status"></div>
+        <div id="preview" class="preview"></div>
+        <div id="status" class="status"></div>
 
-<input type="hidden" id="meta_title" name="meta_title">
-<input type="hidden" id="meta_author" name="meta_author">
-<input type="hidden" id="meta_provider" name="meta_provider">
-<input type="hidden" id="meta_thumbnail" name="meta_thumbnail">
-
-</form>
-</div>
+        <!-- 메일로 같이 보내는 hidden -->
+        <input type="hidden" id="meta_title" name="meta_title">
+        <input type="hidden" id="meta_author" name="meta_author">
+        <input type="hidden" id="meta_provider" name="meta_provider">
+        <input type="hidden" id="meta_thumbnail" name="meta_thumbnail">
+      </form>
+    </div>
+  </div>
 
 <script>
-const $ = id => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
-function detect(url){
-  if(url.includes("youtu")) return "youtube";
-  if(url.includes("spotify")) return "spotify";
-  if(url.includes("soundcloud")) return "soundcloud";
-  return null;
-}
+  function setStatus(msg, ok=true){
+    $("status").textContent = msg || "";
+    $("status").style.color = ok ? "#2b2b2b" : "crimson";
+  }
 
-function oembed(type,url){
-  const u=encodeURIComponent(url);
-  if(type=="youtube") return `https://www.youtube.com/oembed?url=${u}&format=json`;
-  if(type=="spotify") return `https://open.spotify.com/oembed?url=${u}`;
-  if(type=="soundcloud") return `https://soundcloud.com/oembed?format=json&url=${u}`;
-}
+  function detectProvider(url){
+    try{
+      const u = new URL(url);
+      const h = u.hostname.toLowerCase();
+      if (h.includes("youtube.com") || h.includes("youtu.be")) return "youtube";
+      if (h.includes("open.spotify.com") || h.includes("spotify.link")) return "spotify";
+      if (h.includes("soundcloud.com")) return "soundcloud";
+      return "unknown";
+    }catch(e){
+      return "invalid";
+    }
+  }
 
-async function preview(){
-  const url=$("url").value.trim();
-  if(!url) return;
+  function oembedEndpoint(provider, url){
+    const encoded = encodeURIComponent(url);
+    if (provider === "youtube") return `https://www.youtube.com/oembed?url=${encoded}&format=json`;
+    if (provider === "spotify") return `https://open.spotify.com/oembed?url=${encoded}`;
+    if (provider === "soundcloud") return `https://soundcloud.com/oembed?format=json&url=${encoded}`;
+    return null;
+  }
 
-  const type=detect(url);
-  if(!type){$("status").innerText="지원 안되는 링크";return;}
+  function clearMeta(){
+    $("meta_title").value = "";
+    $("meta_author").value = "";
+    $("meta_provider").value = "";
+    $("meta_thumbnail").value = "";
+  }
 
-  try{
-    const res=await fetch(oembed(type,url));
-    const data=await res.json();
+  function renderPreview({ok, title, author_name, provider_name, thumbnail_url, error}){
+    const box = $("preview");
+    box.style.display = "block";
 
-    $("preview").style.display="block";
-    $("preview").innerHTML=`
-      <b>${data.title}</b><br>
-      ${data.author_name || ""}<br>
-      <img src="${data.thumbnail_url || ""}">
+    if(!ok){
+      box.innerHTML = `미리보기를 불러오지 못했어요 😿<div style="margin-top:6px;color:rgba(0,0,0,.6);font-weight:600;font-size:13px">${error || ""}</div>`;
+      clearMeta();
+      return;
+    }
+
+    box.innerHTML = `
+      <div style="font-weight:900;font-size:15px">${title || "(제목 없음)"}</div>
+      <div style="color:rgba(0,0,0,.6);font-weight:650;font-size:13px;margin-top:2px">
+        ${(provider_name||"")}${author_name ? " · " + author_name : ""}
+      </div>
+      ${thumbnail_url ? `<img src="${thumbnail_url}" alt="thumbnail">` : ""}
     `;
 
-    $("meta_title").value=data.title;
-    $("meta_author").value=data.author_name;
-    $("meta_provider").value=data.provider_name;
-    $("meta_thumbnail").value=data.thumbnail_url;
-
-    $("status").innerText="미리보기 완료!";
-  }catch{
-    $("status").innerText="미리보기 불러오기 실패 (그래도 전송 가능)";
+    $("meta_title").value = title || "";
+    $("meta_author").value = author_name || "";
+    $("meta_provider").value = provider_name || "";
+    $("meta_thumbnail").value = thumbnail_url || "";
   }
-}
 
-$("previewBtn").addEventListener("click",preview);
+  let lastPreviewUrl = "";
+  let previewTimer = null;
 
-$("form").addEventListener("submit",()=>{
-  setTimeout(()=>{
-    confetti({particleCount:200,spread:100,origin:{y:0.6}});
-    $("status").innerText="전송 완료! 🎉 추천 감사합니다!";
-  },300);
-});
+  async function doPreview(auto=false){
+    const url = $("url").value.trim();
+    if(!url){
+      $("preview").style.display = "none";
+      setStatus("");
+      clearMeta();
+      lastPreviewUrl = "";
+      return;
+    }
+
+    // 같은 URL로 반복 호출 방지
+    if(url === lastPreviewUrl && auto) return;
+
+    const provider = detectProvider(url);
+    if(provider === "invalid"){
+      setStatus("URL 형식이 이상해요 😿", false);
+      $("preview").style.display="none";
+      clearMeta();
+      return;
+    }
+    if(provider === "unknown"){
+      renderPreview({ok:false, error:"지원하지 않는 링크예요. (YouTube/Spotify/SoundCloud 권장)"});
+      setStatus("미리보기 실패(지원 링크 아님) 😿", false);
+      lastPreviewUrl = url;
+      return;
+    }
+
+    const endpoint = oembedEndpoint(provider, url);
+    setStatus("미리보기 불러오는 중…");
+
+    try{
+      const res = await fetch(endpoint);
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+
+      renderPreview({
+        ok:true,
+        title: data.title,
+        author_name: data.author_name,
+        provider_name: data.provider_name,
+        thumbnail_url: data.thumbnail_url
+      });
+
+      setStatus("미리보기 완료! ✅");
+      lastPreviewUrl = url;
+    }catch(e){
+      renderPreview({ok:false, error:"oEmbed 호출이 막혔거나 실패했어요(CORS/네트워크). 그래도 전송은 가능해요!"});
+      setStatus("미리보기 실패 😿", false);
+      lastPreviewUrl = url;
+    }
+  }
+
+  function scheduleAutoPreview(){
+    // 타이핑 멈춘 뒤 자동 미리보기 (디바운스)
+    if(previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => doPreview(true), 550);
+  }
+
+  $("previewBtn").addEventListener("click", () => doPreview(false));
+  $("url").addEventListener("input", scheduleAutoPreview);
+  $("url").addEventListener("paste", scheduleAutoPreview);
+  $("url").addEventListener("change", () => doPreview(true));
+  $("url").addEventListener("blur", () => doPreview(true));
+
+  // 전송 성공 폭죽 (※ Formspree 실제 성공 여부와 무관하게 터질 수 있음. 아래 "진짜 성공 처리" 버전도 가능!)
+  $("form").addEventListener("submit", () => {
+    setTimeout(() => {
+      confetti({ particleCount: 220, spread: 110, origin: { y: 0.65 } });
+      setStatus("전송 완료! 🎉 추천 감사합니다!", true);
+    }, 350);
+  });
+
+  /* ✅ 배경사진 실시간 변경 (picsum 랜덤 이미지, 12초마다 크로스페이드) */
+  const bgA = $("bgA");
+  const bgB = $("bgB");
+  let bgOnA = true;
+  let seed = Math.floor(Math.random()*100000);
+
+  function bgUrl(s){
+    // 원하면 사이즈를 1920/1080로 올려도 됨
+    return `https://picsum.photos/seed/${s}/1600/900`;
+  }
+
+  function setBackground(){
+    seed += 1;
+    const url = bgUrl(seed);
+
+    const next = bgOnA ? bgB : bgA;
+    const cur  = bgOnA ? bgA : bgB;
+
+    next.style.backgroundImage = `url('${url}')`;
+    next.classList.add("on");
+    cur.classList.remove("on");
+
+    bgOnA = !bgOnA;
+  }
+
+  // 초기 배경 2장 준비
+  bgA.style.backgroundImage = `url('${bgUrl(seed)}')`;
+  bgB.style.backgroundImage = `url('${bgUrl(seed+1)}')`;
+  // 첫 전환
+  setTimeout(setBackground, 800);
+  // 주기적으로 변경
+  setInterval(setBackground, 12000);
 </script>
 </body>
 </html>
